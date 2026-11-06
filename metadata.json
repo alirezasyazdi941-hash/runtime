@@ -1,0 +1,6 @@
+{
+  "name": "NONONICK UNIVERSAL SELF-CONTAINED RUNTIME",
+  "description": "WebAssembly Compiler Hub & On-Demand Execution Engine for universal software transformation, local-first execution, and zero-idle cloud cost management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

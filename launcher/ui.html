@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NONONICK Launcher</title>
+<style>
+:root{--bg:#080b10;--panel:#0c1017;--line:#1e293b;--fg:#e2e8f0;--mut:#94a3b8;--acc:#22d3ee;--ok:#34d399;--err:#f87171;--warn:#fbbf24}
+@media (prefers-color-scheme: light){:root{--bg:#f8fafc;--panel:#fff;--line:#e2e8f0;--fg:#0f172a;--mut:#64748b;--acc:#0891b2;--ok:#059669;--err:#dc2626;--warn:#d97706}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,Segoe UI,Vazirmatn,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:20px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:12px}
+h1{font-size:18px;margin:0}small,.mut{color:var(--mut)}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--fg);padding:4px 10px;border-radius:8px}
+button.pri{background:var(--acc);color:#001018;border-color:var(--acc);font-weight:600}button:disabled{opacity:.5;cursor:default}
+#drop{margin:16px 0;border:2px dashed var(--line);border-radius:16px;padding:32px 16px;text-align:center;background:var(--panel);transition:.15s}
+#drop.over{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 10%,var(--panel))}
+#sys{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;font:12px ui-monospace,monospace}
+.chip{border:1px solid var(--line);border-radius:999px;padding:1px 8px}.chip.bad{color:var(--err);border-color:var(--err)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;display:grid;gap:6px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.badge{font:11px ui-monospace,monospace;padding:1px 8px;border-radius:6px;border:1px solid var(--line)}
+.running{color:var(--ok)}.error{color:var(--err)}.installing,.building,.starting{color:var(--warn)}
+a{color:var(--acc)}#log{height:260px;overflow:auto;background:#05070b;color:#cbd5e1;border:1px solid var(--line);border-radius:10px;padding:8px;font:12px/1.5 ui-monospace,monospace;white-space:pre-wrap;direction:ltr;text-align:left}
+#log .err{color:#f87171}#log .sys{color:#22d3ee}
+label.chk{display:inline-flex;gap:6px;align-items:center}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div><h1>NONONICK Launcher</h1><small id="sub"></small></div>
+  <div><button id="lang">فارسی</button></div>
+</header>
+<div id="sys"></div>
+<div id="drop">
+  <div style="font-size:15px;font-weight:600" id="t_drop"></div>
+  <p class="mut" id="t_hint"></p>
+  <input id="file" type="file" multiple hidden>
+  <button class="pri" id="pick"></button>
+  <p><label class="chk"><input type="checkbox" id="auto" checked><span id="t_auto"></span></label></p>
+  <div id="msg" class="mut"></div>
+</div>
+<div id="list"></div>
+<h3 id="t_logs"></h3>
+<div id="log"></div>
+</main>
+<script>
+const T={en:{sub:'Drop a ZIP — it gets installed and run.',drop:'Drag & drop a .zip here',hint:'Node.js, Python or static sites. A single .js / .py / .html file works too.',pick:'Choose files',auto:'Install & run automatically after drop',logs:'Logs',start:'Start',stop:'Stop',del:'Delete',open:'Open',uploading:'Uploading',folder:'Folders must be zipped first.',empty:'No projects yet.',norun:'Nothing runnable detected',missing:'missing'},
+fa:{sub:'یک زیپ بیندازید؛ نصب و اجرا می‌شود.',drop:'فایل .zip را اینجا رها کنید',hint:'پروژه Node.js، پایتون یا سایت استاتیک. یک فایل .js / .py / .html هم کار می‌کند.',pick:'انتخاب فایل',auto:'بعد از رها کردن، خودکار نصب و اجرا شود',logs:'لاگ‌ها',start:'اجرا',stop:'توقف',del:'حذف',open:'باز کردن',uploading:'در حال آپلود',folder:'پوشه‌ها را اول زیپ کنید.',empty:'هنوز پروژه‌ای نیست.',norun:'چیزی برای اجرا پیدا نشد',missing:'نصب نیست'}};
+let lang=localStorage.getItem('lang')||(navigator.language||'').startsWith('fa')?'fa':'en';
+if(localStorage.getItem('lang'))lang=localStorage.getItem('lang');
+const $=id=>document.getElementById(id), t=k=>T[lang][k];
+const tok=new URLSearchParams(location.search).get('token')||sessionStorage.getItem('tk')||'';if(tok)sessionStorage.setItem('tk',tok);
+const api=(p,o={})=>fetch(p+(tok?(p.includes('?')?'&':'?')+'token='+encodeURIComponent(tok):''),o).then(async r=>{const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||r.status);return j});
+const projects=new Map(),logs=new Map();let sel=null;
+function applyLang(){document.documentElement.lang=lang;document.documentElement.dir=lang==='fa'?'rtl':'ltr';
+ $('sub').textContent=t('sub');$('t_drop').textContent=t('drop');$('t_hint').textContent=t('hint');$('pick').textContent=t('pick');$('t_auto').textContent=t('auto');$('t_logs').textContent=t('logs');$('lang').textContent=lang==='fa'?'English':'فارسی';render();}
+$('lang').onclick=()=>{lang=lang==='fa'?'en':'fa';localStorage.setItem('lang',lang);applyLang()};
+function render(){const box=$('list');box.textContent='';
+ if(!projects.size){const p=document.createElement('p');p.className='mut';p.textContent=t('empty');box.append(p)}
+ for(const p of [...projects.values()].sort((a,b)=>b.createdAt-a.createdAt)){
+  const c=document.createElement('div');c.className='card';
+  const top=document.createElement('div');top.className='row';
+  const h=document.createElement('strong');h.textContent=p.name;
+  const st=document.createElement('span');st.className='badge '+p.status;st.textContent=p.status;
+  top.append(h,st);
+  const meta=document.createElement('div');meta.className='mut';meta.textContent=`${p.framework} · ${p.files} files · ${p.runLabel||t('norun')}`;
+  const act=document.createElement('div');act.className='row';const l=document.createElement('div');
+  if(p.url){const a=document.createElement('a');a.href=p.url;a.target='_blank';a.rel='noopener';a.textContent=p.url;l.append(a)}
+  if(p.error){const e=document.createElement('span');e.className='error';e.textContent=p.error;l.append(e)}
+  const b=document.createElement('div');
+  const mk=(txt,fn,cls,dis)=>{const x=document.createElement('button');x.textContent=txt;if(cls)x.className=cls;x.disabled=!!dis;x.onclick=fn;b.append(x,' ');return x};
+  const busy=['installing','building','starting','running'].includes(p.status);
+  mk(t('start'),()=>api(`/api/projects/${p.id}/start`,{method:'POST'}),'pri',busy||!p.runnable);
+  mk(t('stop'),()=>api(`/api/projects/${p.id}/stop`,{method:'POST'}),'',!busy);
+  mk(t('logs'),()=>{sel=p.id;renderLog()});
+  mk(t('del'),()=>api(`/api/projects/${p.id}`,{method:'DELETE'}));
+  act.append(l,b);c.append(top,meta,act);box.append(c)}
+ }
+function renderLog(){const el=$('log');el.textContent='';for(const e of logs.get(sel)||[])addLine(e);el.scrollTop=1e9}
+function addLine(e){const s=document.createElement('div');if(e.s!=='out')s.className=e.s;s.textContent=e.m;$('log').append(s)}
+async function upload(files){
+ for(const f of files){
+  $('msg').textContent=`${t('uploading')} ${f.name}…`;
+  try{const p=await api(`/api/projects?name=${encodeURIComponent(f.name)}&autostart=${$('auto').checked?1:0}`,{method:'POST',body:f,headers:{'content-type':'application/octet-stream'}});
+   projects.set(p.id,p);sel=p.id;logs.set(p.id,await api(`/api/projects/${p.id}/logs`));$('msg').textContent='';}
+  catch(e){$('msg').textContent=e.message}
+ }render();renderLog()}
+const drop=$('drop');
+['dragenter','dragover'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>{const items=[...e.dataTransfer.items||[]];
+ if(items.some(i=>i.webkitGetAsEntry?.()?.isDirectory)){$('msg').textContent=t('folder');return}
+ upload([...e.dataTransfer.files])});
+$('pick').onclick=()=>$('file').click();$('file').onchange=e=>{upload([...e.target.files]);e.target.value=''};
+window.addEventListener('dragover',e=>e.preventDefault());window.addEventListener('drop',e=>e.preventDefault());
+(async()=>{
+ const sys=await api('/api/system').catch(()=>({}));
+ for(const [k,v] of Object.entries(sys)){if(!v&&!['bun','pnpm','yarn'].includes(k)){}
+  if(!v&&['bun','pnpm','yarn'].includes(k))continue;
+  const c=document.createElement('span');c.className='chip'+(v?'':' bad');c.textContent=`${k}: ${v||t('missing')}`;$('sys').append(c)}
+ for(const p of await api('/api/projects')){projects.set(p.id,p);logs.set(p.id,await api(`/api/projects/${p.id}/logs`))}
+ sel=[...projects.keys()][0]||null;applyLang();renderLog();
+ const es=new EventSource('/api/events'+(tok?'?token='+encodeURIComponent(tok):''));
+ es.onmessage=m=>{const d=JSON.parse(m.data);
+  if(d.type==='project'){projects.set(d.project.id,d.project);render()}
+  if(d.type==='removed'){projects.delete(d.id);logs.delete(d.id);render()}
+  if(d.type==='log'){const a=logs.get(d.id)||[];a.push(d.entry);logs.set(d.id,a.slice(-3000));if(d.id===sel){const el=$('log');const near=el.scrollHeight-el.scrollTop-el.clientHeight<40;addLine(d.entry);if(near)el.scrollTop=1e9}}};
+})();
+</script>
+</body>
+</html>

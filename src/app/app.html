@@ -1,0 +1,60 @@
+<div class="min-h-screen flex flex-col bg-[#080b10] text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200">
+  <!-- Top Navigation Bar -->
+  <app-top-bar
+    [activeTab]="activeTab()"
+    (tabChange)="onTabChange($event)"
+  />
+
+  <!-- Main Body Layout: Sidebar + Viewport Canvas -->
+  <div class="flex-1 flex overflow-hidden">
+    <app-sidebar
+      [activeTab]="activeTab()"
+      (tabChange)="onTabChange($event)"
+    />
+
+    <!-- Dynamic Viewport -->
+    <main class="flex-1 overflow-y-auto bg-[#080b10] relative">
+      @switch (activeTab()) {
+        @case ('dashboard') {
+          <app-dashboard-view (navChange)="onTabChange($event)" />
+        }
+        @case ('projects') {
+          <app-project-manager-view (navChange)="onTabChange($event)" />
+        }
+        @case ('import') {
+          <app-import-center-view (navChange)="onTabChange($event)" />
+        }
+        @case ('analyzer') {
+          <app-analyzer-view (navChange)="onTabChange($event)" />
+        }
+        @case ('wasm') {
+          <app-wasm-compiler-view />
+        }
+        @case ('runtime') {
+          <app-runtime-manager-view (navChange)="onTabChange($event)" />
+        }
+        @case ('preview') {
+          <app-live-preview-view />
+        }
+        @case ('editor') {
+          <app-code-editor-view />
+        }
+        @case ('console') {
+          <app-console-view />
+        }
+        @case ('cost') {
+          <app-cost-monitor-view />
+        }
+        @case ('export') {
+          <app-export-center-view (navChange)="onTabChange($event)" />
+        }
+        @case ('settings') {
+          <app-settings-view />
+        }
+        @default {
+          <app-dashboard-view (navChange)="onTabChange($event)" />
+        }
+      }
+    </main>
+  </div>
+</div>
