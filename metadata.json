@@ -1,6 +1,6 @@
 {
-  "name": "NONONICK UNIVERSAL SELF-CONTAINED RUNTIME",
-  "description": "WebAssembly Compiler Hub & On-Demand Execution Engine for universal software transformation, local-first execution, and zero-idle cloud cost management.",
-  "requestFramePermissions": [],
+  "name": "NONONICK REALITY FORGE",
+  "description": "AI-Powered AR / VR / MR Development & Learning Studio featuring REALITY MASTER AI, real-time 3D Viewport, WebXR AR/VR simulator & device testing, interactive code playground, and comprehensive XR academy.",
+  "requestFramePermissions": ["camera", "microphone", "display-capture", "xr-spatial-tracking"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -1,45 +1,47 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { TopBar } from './components/top-bar';
-import { Sidebar } from './components/sidebar';
-import { DashboardView } from './components/dashboard-view';
-import { ProjectManagerView } from './components/project-manager-view';
-import { ImportCenterView } from './components/import-center-view';
-import { AnalyzerView } from './components/analyzer-view';
-import { WasmCompilerView } from './components/wasm-compiler-view';
-import { RuntimeManagerView } from './components/runtime-manager-view';
-import { LivePreviewView } from './components/live-preview-view';
-import { CodeEditorView } from './components/code-editor-view';
-import { ConsoleView } from './components/console-view';
-import { CostMonitorView } from './components/cost-monitor-view';
-import { ExportCenterView } from './components/export-center-view';
-import { SettingsView } from './components/settings-view';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { HeaderComponent } from './components/header/header.component';
+import { DashboardComponent } from './components/dashboard/dashboard.component';
+import { Viewport3DComponent } from './components/viewport3d/viewport3d.component';
+import { ARStudioComponent } from './components/ar-studio/ar-studio.component';
+import { VRStudioComponent } from './components/vr-studio/vr-studio.component';
+import { CodeWorkspaceComponent } from './components/code-workspace/code-workspace.component';
+import { AiGeneratorComponent } from './components/ai-generator/ai-generator.component';
+import { AcademyComponent } from './components/academy/academy.component';
+import { AssetLibraryComponent } from './components/asset-library/asset-library.component';
+import { KnowledgeCenterComponent } from './components/knowledge-center/knowledge-center.component';
+import { QATestingComponent } from './components/qa-testing/qa-testing.component';
+import { I18nService } from './services/i18n.service';
+import { StudioView } from './models/xr.models';
 
 @Component({
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    TopBar,
-    Sidebar,
-    DashboardView,
-    ProjectManagerView,
-    ImportCenterView,
-    AnalyzerView,
-    WasmCompilerView,
-    RuntimeManagerView,
-    LivePreviewView,
-    CodeEditorView,
-    ConsoleView,
-    CostMonitorView,
-    ExportCenterView,
-    SettingsView
+    CommonModule,
+    HeaderComponent,
+    DashboardComponent,
+    Viewport3DComponent,
+    ARStudioComponent,
+    VRStudioComponent,
+    CodeWorkspaceComponent,
+    AiGeneratorComponent,
+    AcademyComponent,
+    AssetLibraryComponent,
+    KnowledgeCenterComponent,
+    QATestingComponent,
   ],
   templateUrl: './app.html',
-  styleUrl: './app.css'
+  styleUrl: './app.css',
 })
 export class App {
-  readonly activeTab = signal<string>('dashboard');
+  i18n = inject(I18nService);
+  activeView = signal<StudioView>('dashboard');
 
-  onTabChange(newTab: string): void {
-    this.activeTab.set(newTab);
+  onViewChange(view: StudioView) {
+    this.activeView.set(view);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 }
