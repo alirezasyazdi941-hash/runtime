@@ -1,0 +1,11 @@
+{
+  "name": "NONONICK Launcher",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "features": { "ghcr.io/devcontainers/features/python:1": {} },
+  "forwardPorts": [4000],
+  "portsAttributes": {
+    "4000": { "label": "Launcher (drop ZIPs here)", "onAutoForward": "openBrowser" },
+    "4100-4999": { "label": "Running project", "onAutoForward": "notify" }
+  },
+  "postAttachCommand": "bash -c 'curl -s localhost:4000 >/dev/null || (nohup node launcher/server.mjs >/tmp/launcher.log 2>&1 &)'"
+}

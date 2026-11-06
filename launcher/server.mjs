@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { Manager, systemInfo } from './lib/manager.mjs';
+import { Manager, systemInfo, publicUrlFor } from './lib/manager.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const isLoopback = (h) => ['127.0.0.1', 'localhost', '::1'].includes(h);
@@ -35,7 +35,9 @@ export function createLauncher({
     // DNS-rebinding / CSRF guard: only accept our own Host, and same-origin Origin.
     const hostHdr = (req.headers.host || '').toLowerCase();
     const bound = server.address()?.port ?? port;
-    if (isLoopback(host) && ![`localhost:${bound}`, `127.0.0.1:${bound}`, `[::1]:${bound}`].includes(hostHdr)) return false;
+    const extra = (process.env.LAUNCHER_ALLOWED_HOSTS || '').split(',').map((h) => h.trim().toLowerCase()).filter(Boolean);
+    try { extra.push(new URL(publicUrlFor(bound)).host.toLowerCase()); } catch { /* ignore */ }
+    if (isLoopback(host) && ![`localhost:${bound}`, `127.0.0.1:${bound}`, `[::1]:${bound}`, ...extra].includes(hostHdr)) return false;
     const origin = req.headers.origin;
     if (origin) { try { if (new URL(origin).host.toLowerCase() !== hostHdr) return false; } catch { return false; } }
     if (token) {
@@ -115,7 +117,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   try { app = createLauncher(); } catch (e) { console.error(e.message); process.exit(1); }
   const port = await app.listen();
   const tokenQ = process.env.LAUNCHER_TOKEN ? `/?token=${encodeURIComponent(process.env.LAUNCHER_TOKEN)}` : '/';
-  console.log(`\n  NONONICK Launcher  →  http://localhost:${port}${tokenQ}\n  Workspace: ${app.manager.workspace}\n  Drop a .zip in the browser to install and run it. Ctrl+C to quit.\n`);
+  console.log(`\n  NONONICK Launcher  →  ${publicUrlFor(port).replace(/\/$/, '')}${tokenQ}\n  Workspace: ${app.manager.workspace}\n  Drop a .zip in the browser to install and run it. Ctrl+C to quit.\n`);
   const bye = async () => { await app.close(); process.exit(0); };
   process.on('SIGINT', bye); process.on('SIGTERM', bye);
 }

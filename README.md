@@ -5,13 +5,25 @@ Two parts in one repo:
 1. **Launcher** (`launcher/`) — drag & drop a `.zip` into the browser; it is extracted, analysed, its dependencies are installed and it is started. Zero dependencies, only Node ≥ 18.
 2. **Angular analysis workbench** (`src/`) — the original Angular 21 app (WASM compiler hub, analyzer, cost monitor…). It already has its own in‑browser ZIP import (Import Center); it analyses code but does not execute it.
 
+## Self-contained: one file, no install
+
+```bash
+npm run bundle        # → dist/nononick-launcher.mjs  (UI embedded, zero dependencies)
+node nononick-launcher.mjs
+```
+Copy that single file anywhere with Node ≥ 18 and it works. CI publishes it as the `nononick-launcher` artifact on every push.
+
+## Phone only? Use GitHub Codespaces
+Repo → **Code ▸ Codespaces ▸ Create codespace**. `.devcontainer/` installs Node + Python and starts the launcher; the browser opens on port 4000. Dropped projects get forwarded URLs automatically (`https://<codespace>-<port>.app.github.dev/`). Custom proxies: set `LAUNCHER_PUBLIC_URL_TEMPLATE=https://host-{PORT}.example.com/` and `LAUNCHER_ALLOWED_HOSTS`.
+
 ## Quick start
 
 | OS | Command |
 |---|---|
 | macOS / Linux | `./run.sh` |
 | Windows | double‑click `run.bat` |
-| Any (Node already installed) | `npm run launcher` |
+| Any (Node already installed) | `npm start` (or `npx nononick-launcher`) |
+| Angular workbench instead | `npm run app:start` |
 
 `run.sh` / `run.bat` first check for Node.js ≥ 20 and **install it if missing** (Homebrew or [fnm](https://github.com/Schniz/fnm) on macOS/Linux; winget/choco on Windows), then start the launcher at <http://localhost:4000>.
 

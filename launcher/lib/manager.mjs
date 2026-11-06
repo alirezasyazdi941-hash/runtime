@@ -46,6 +46,14 @@ async function freePort(start, end) {
 
 const sanitizeName = (n) => (String(n || 'project').replace(/\.zip$/i, '').replace(/[^\w.\- ]+/g, '_').trim().slice(0, 60) || 'project');
 
+/** URL a browser should use for a port. Codespaces and custom templates are supported. */
+export function publicUrlFor(port, env = process.env) {
+  const tpl = env.LAUNCHER_PUBLIC_URL_TEMPLATE
+    || (env.CODESPACE_NAME && env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN
+      ? `https://${env.CODESPACE_NAME}-{PORT}.${env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}/` : '');
+  return tpl ? tpl.replace('{PORT}', String(port)) : `http://localhost:${port}/`;
+}
+
 export class Manager extends EventEmitter {
   constructor({ workspace, host = '127.0.0.1', portStart = 4100, portEnd = 4999 }) {
     super();
@@ -178,7 +186,7 @@ export class Manager extends EventEmitter {
     this.#log(p, clean, stream);
     if (track && !p.meta.url) {
       const m = URL_RE.exec(clean);
-      if (m) this.#update(p, { port: +m[1], url: `http://localhost:${m[1]}/`, status: 'running' });
+      if (m) this.#update(p, { port: +m[1], url: publicUrlFor(m[1]), status: 'running' });
     }
   }
 
@@ -218,8 +226,8 @@ export class Manager extends EventEmitter {
         const srv = createStaticServer(root);
         await new Promise((res, rej) => { srv.once('error', rej); srv.listen(port, this.host, res); });
         p.staticServer = srv;
-        this.#log(p, `Serving ${path.relative(dir, root) || '.'} on http://localhost:${port}/`, 'sys');
-        this.#update(p, { status: 'running', port, url: `http://localhost:${port}/` });
+        this.#log(p, `Serving ${path.relative(dir, root) || '.'} on ${publicUrlFor(port)}`, 'sys');
+        this.#update(p, { status: 'running', port, url: publicUrlFor(port) });
         return this.view(p);
       }
 
@@ -228,7 +236,7 @@ export class Manager extends EventEmitter {
       const done = this.#exec(p, this.#resolve(plan.run.cmd, tokens), { env, track: true });
       // Fallback if the program never prints a URL
       const timer = setTimeout(() => {
-        if (p.meta.status === 'starting') this.#update(p, { status: 'running', url: `http://localhost:${port}/` });
+        if (p.meta.status === 'starting') this.#update(p, { status: 'running', url: publicUrlFor(port) });
       }, 20000);
       done.then((code) => {
         clearTimeout(timer); p.proc = null;
